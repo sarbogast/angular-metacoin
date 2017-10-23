@@ -1,6 +1,5 @@
 import {Component, OnInit} from '@angular/core';
 import {Web3Service} from '../../util/web3.service';
-import {MetaCoinService} from '../meta-coin.service';
 
 @Component({
   selector: 'app-meta-sender',
@@ -9,23 +8,39 @@ import {MetaCoinService} from '../meta-coin.service';
 })
 export class MetaSenderComponent implements OnInit {
   accounts: string[];
-  amount = 5;
-  receiver = '';
-  balance = 0;
-  account = '';
+  MetaCoin: Promise<any>;
+
+  model = {
+    amount: 5,
+    receiver: '',
+    balance: 0,
+    account: ''
+  };
+
   status = '';
 
-  constructor(private web3Service: Web3Service, private metaCoinService: MetaCoinService) {
-
+  constructor(private web3Service: Web3Service) {
+    console.log('Constructor: ' + web3Service);
   }
 
   ngOnInit(): void {
-    this.web3Service.getAccounts().subscribe((accounts: string[]) => {
+    console.log('OnInit: ' + this.web3Service);
+    console.log(this);
+    this.watchAccount();
+    this.MetaCoin = new Promise((resolve, reject) => {
+      setInterval(() => {
+        if (this.web3Service.ready) {
+          resolve(this.web3Service.MetaCoin);
+        }
+      }, 100);
+    });
+  }
+
+  watchAccount() {
+    this.web3Service.accountsObservable.subscribe((accounts) => {
       this.accounts = accounts;
-      if (this.accounts.length > 0) {
-        this.account = accounts[0];
-        this.refreshBalance();
-      }
+      this.model.account = accounts[0];
+      this.refreshBalance();
     });
   }
 
@@ -33,33 +48,8 @@ export class MetaSenderComponent implements OnInit {
     this.status = status;
   }
 
-  refreshBalance() {
-    console.log('Refreshing balance');
-    this.metaCoinService.getBalance(this.account).subscribe((balance) => {
-      this.balance = balance;
-    }, (error) => {
-      console.error(error);
-      this.setStatus('Error getting balance; see log.');
-    });
-  }
-
-  clickAddress(e) {
-    this.account = e.target.value;
-    this.refreshBalance();
-  }
-
-  setAmount(e) {
-    console.log('Setting amount: ' + e.target.value);
-    this.amount = e.target.value;
-  }
-
-  setReceiver(e) {
-    console.log('Setting receiver: ' + e.target.value);
-    this.receiver = e.target.value;
-  }
-
   sendCoin() {
-    /*if (!this.MetaCoin) {
+    if (!this.MetaCoin) {
       this.setStatus('Metacoin is not loaded, unable to send transaction');
       return;
     }
@@ -84,7 +74,38 @@ export class MetaSenderComponent implements OnInit {
     }).catch((e) => {
       console.log(e);
       this.setStatus('Error sending coin; see log.');
-    });*/
+    });
+  }
+
+  refreshBalance() {
+    console.log('Refreshing balance');
+
+    this.MetaCoin.then((contract) => {
+      return contract.deployed();
+    }).then((metaCoinInstance) => {
+      return metaCoinInstance.getBalance.call(this.model.account);
+    }).then((value) => {
+      console.log('Found balance: ' + value);
+      this.model.balance = value.valueOf();
+    }).catch(function (e) {
+      console.log(e);
+      this.setStatus('Error getting balance; see log.');
+    });
+  }
+
+  clickAddress(e) {
+    this.model.account = e.target.value;
+    this.refreshBalance();
+  }
+
+  setAmount(e) {
+    console.log('Setting amount: ' + e.target.value);
+    this.model.amount = e.target.value;
+  }
+
+  setReceiver(e) {
+    console.log('Setting receiver: ' + e.target.value);
+    this.model.receiver = e.target.value;
   }
 
 }
