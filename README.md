@@ -8,5 +8,4 @@ And in a new terminal
 ```
 truffle migrate
 ng serve
-``
-`
+```
