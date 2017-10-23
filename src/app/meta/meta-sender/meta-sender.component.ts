@@ -9,14 +9,10 @@ import {Web3Service} from '../../util/web3.service';
 export class MetaSenderComponent implements OnInit {
   accounts: string[];
   MetaCoin: Promise<any>;
-
-  model = {
-    amount: 5,
-    receiver: '',
-    balance: 0,
-    account: ''
-  };
-
+  amount = 5;
+  receiver = '';
+  balance = 0;
+  account = '';
   status = '';
 
   constructor(private web3Service: Web3Service) {
@@ -39,7 +35,7 @@ export class MetaSenderComponent implements OnInit {
   watchAccount() {
     this.web3Service.accountsObservable.subscribe((accounts) => {
       this.accounts = accounts;
-      this.model.account = accounts[0];
+      this.account = accounts[0];
       this.refreshBalance();
     });
   }
@@ -54,8 +50,8 @@ export class MetaSenderComponent implements OnInit {
       return;
     }
 
-    const amount = this.model.amount;
-    const receiver = this.model.receiver;
+    const amount = this.amount;
+    const receiver = this.receiver;
 
     console.log('Sending coins' + amount + ' to ' + receiver);
 
@@ -64,7 +60,7 @@ export class MetaSenderComponent implements OnInit {
     this.MetaCoin.then((contract) => {
       return contract.deployed();
     }).then((metaCoinInstance) => {
-      return metaCoinInstance.sendCoin.sendTransaction(receiver, amount, {from: this.model.account});
+      return metaCoinInstance.sendCoin.sendTransaction(receiver, amount, {from: this.account});
     }).then((success) => {
       if (!success) {
         this.setStatus('Transaction failed!');
@@ -83,10 +79,10 @@ export class MetaSenderComponent implements OnInit {
     this.MetaCoin.then((contract) => {
       return contract.deployed();
     }).then((metaCoinInstance) => {
-      return metaCoinInstance.getBalance.call(this.model.account);
+      return metaCoinInstance.getBalance.call(this.account);
     }).then((value) => {
       console.log('Found balance: ' + value);
-      this.model.balance = value.valueOf();
+      this.balance = value.valueOf();
     }).catch(function (e) {
       console.log(e);
       this.setStatus('Error getting balance; see log.');
@@ -94,18 +90,18 @@ export class MetaSenderComponent implements OnInit {
   }
 
   clickAddress(e) {
-    this.model.account = e.target.value;
+    this.account = e.target.value;
     this.refreshBalance();
   }
 
   setAmount(e) {
     console.log('Setting amount: ' + e.target.value);
-    this.model.amount = e.target.value;
+    this.amount = e.target.value;
   }
 
   setReceiver(e) {
     console.log('Setting receiver: ' + e.target.value);
-    this.model.receiver = e.target.value;
+    this.receiver = e.target.value;
   }
 
 }
