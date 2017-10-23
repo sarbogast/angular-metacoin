@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {Web3Service} from '../../util/web3.service';
+import {MetaCoinService} from '../meta-coin.service';
 
 @Component({
   selector: 'app-meta-sender',
@@ -15,7 +16,7 @@ export class MetaSenderComponent implements OnInit {
   account = '';
   status = '';
 
-  constructor(private web3Service: Web3Service) {
+  constructor(private web3Service: Web3Service, private metaCoinService: MetaCoinService) {
     console.log('Constructor: ' + web3Service);
   }
 
@@ -26,7 +27,7 @@ export class MetaSenderComponent implements OnInit {
     this.MetaCoin = new Promise((resolve, reject) => {
       setInterval(() => {
         if (this.web3Service.ready) {
-          resolve(this.web3Service.MetaCoin);
+          resolve(this.metaCoinService.MetaCoin);
         }
       }, 100);
     });

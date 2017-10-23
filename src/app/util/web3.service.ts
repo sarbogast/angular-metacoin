@@ -1,9 +1,6 @@
 import {Injectable} from '@angular/core';
 import {default as Web3} from 'web3';
-import {default as contract} from 'truffle-contract';
-import metacoin_artifacts from '../../../build/contracts/MetaCoin.json';
 import {Subject} from 'rxjs/Rx';
-
 declare let window: any;
 
 @Injectable()
@@ -11,12 +8,11 @@ export class Web3Service {
   private web3: Web3;
   private accounts: string[];
   public ready = false;
-  public MetaCoin: any;
+
+  public loaded$ = new Subject<Web3>();
   public accountsObservable = new Subject<string[]>();
 
   constructor() {
-    this.MetaCoin = contract(metacoin_artifacts);
-
     window.addEventListener('load', (event) => {
       // Checking if Web3 has been injected by the browser (Mist/MetaMask)
       if (typeof window.web3 !== 'undefined') {
@@ -27,7 +23,7 @@ export class Web3Service {
         // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
         this.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
       }
-      this.MetaCoin.setProvider(this.web3.currentProvider);
+      this.loaded$.next(this.web3);
       setInterval(() => this.refreshAccounts(), 100);
     });
   }
