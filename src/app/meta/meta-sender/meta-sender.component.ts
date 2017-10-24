@@ -9,6 +9,7 @@ import {MetaCoinService} from '../meta-coin.service';
 })
 export class MetaSenderComponent implements OnInit {
   accounts: string[];
+  MetaCoin: Promise<any>;
   amount = 5;
   receiver = '';
   balance = 0;
@@ -16,16 +17,33 @@ export class MetaSenderComponent implements OnInit {
   status = '';
 
   constructor(private web3Service: Web3Service, private metaCoinService: MetaCoinService) {
-
+    console.log('Constructor: ' + web3Service);
   }
 
   ngOnInit(): void {
-    this.web3Service.getAccounts().subscribe((accounts: string[]) => {
+    this.metaCoinService.loaded$.subscribe(() => {
+      this.refreshAccounts();
+    });
+  }
+
+  refreshAccounts() {
+    this.web3Service.getAccounts().then((accounts: string[]) => {
       this.accounts = accounts;
-      if (this.accounts.length > 0) {
+      if (accounts.length > 0) {
         this.account = accounts[0];
         this.refreshBalance();
       }
+    }).catch((error) => {
+      this.setStatus('Error loading accounts');
+    });
+  }
+
+  refreshBalance() {
+    this.metaCoinService.getBalance(this.account).then((balance) => {
+      console.log('balance: ' + balance);
+      this.balance = balance.valueOf();
+    }).catch((error) => {
+      this.setStatus('Error loading balance');
     });
   }
 
@@ -33,19 +51,38 @@ export class MetaSenderComponent implements OnInit {
     this.status = status;
   }
 
-  refreshBalance() {
-    console.log('Refreshing balance');
-    this.metaCoinService.getBalance(this.account).subscribe((balance) => {
-      this.balance = balance;
-    }, (error) => {
-      console.error(error);
-      this.setStatus('Error getting balance; see log.');
+  sendCoin() {
+    if (!this.MetaCoin) {
+      this.setStatus('Metacoin is not loaded, unable to send transaction');
+      return;
+    }
+
+    const amount = this.amount;
+    const receiver = this.receiver;
+
+    console.log('Sending coins' + amount + ' to ' + receiver);
+
+    this.setStatus('Initiating transaction... (please wait)');
+
+    this.MetaCoin.then((contract) => {
+      return contract.deployed();
+    }).then((metaCoinInstance) => {
+      return metaCoinInstance.sendCoin.sendTransaction(receiver, amount, {from: this.account});
+    }).then((success) => {
+      if (!success) {
+        this.setStatus('Transaction failed!');
+      } else {
+        this.setStatus('Transaction complete!');
+      }
+    }).catch((e) => {
+      console.log(e);
+      this.setStatus('Error sending coin; see log.');
     });
   }
 
   clickAddress(e) {
-    this.account = e.target.value;
-    this.refreshBalance();
+    /*this.account = e.target.value;
+    this.refreshBalance();*/
   }
 
   setAmount(e) {
@@ -56,35 +93,6 @@ export class MetaSenderComponent implements OnInit {
   setReceiver(e) {
     console.log('Setting receiver: ' + e.target.value);
     this.receiver = e.target.value;
-  }
-
-  sendCoin() {
-    /*if (!this.MetaCoin) {
-      this.setStatus('Metacoin is not loaded, unable to send transaction');
-      return;
-    }
-
-    const amount = this.model.amount;
-    const receiver = this.model.receiver;
-
-    console.log('Sending coins' + amount + ' to ' + receiver);
-
-    this.setStatus('Initiating transaction... (please wait)');
-
-    this.MetaCoin.then((contract) => {
-      return contract.deployed();
-    }).then((metaCoinInstance) => {
-      return metaCoinInstance.sendCoin.sendTransaction(receiver, amount, {from: this.model.account});
-    }).then((success) => {
-      if (!success) {
-        this.setStatus('Transaction failed!');
-      } else {
-        this.setStatus('Transaction complete!');
-      }
-    }).catch((e) => {
-      console.log(e);
-      this.setStatus('Error sending coin; see log.');
-    });*/
   }
 
 }
