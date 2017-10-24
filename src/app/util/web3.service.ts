@@ -20,12 +20,8 @@ export class Web3Service {
         this.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
       }
       this.loaded$.next(this.web3);
-      setInterval(() => this.refreshAccounts(), 100);
+      setInterval(() => {}, 100);
     });
-  }
-
-  private refreshAccounts() {
-
   }
 
   getAccounts() {
