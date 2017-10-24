@@ -21,23 +21,29 @@ export class MetaSenderComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('OnInit: ' + this.web3Service);
-    console.log(this);
-    this.watchAccount();
-    this.MetaCoin = new Promise((resolve, reject) => {
-      setInterval(() => {
-        if (this.web3Service.ready) {
-          resolve(this.metaCoinService.MetaCoin);
-        }
-      }, 100);
+    this.metaCoinService.loaded$.subscribe(() => {
+      this.refreshAccounts();
     });
   }
 
-  watchAccount() {
-    this.web3Service.accountsObservable.subscribe((accounts) => {
+  refreshAccounts() {
+    this.web3Service.getAccounts().then((accounts: string[]) => {
       this.accounts = accounts;
-      this.account = accounts[0];
-      this.refreshBalance();
+      if (accounts.length > 0) {
+        this.account = accounts[0];
+        this.refreshBalance();
+      }
+    }).catch((error) => {
+      this.setStatus('Error loading accounts');
+    });
+  }
+
+  refreshBalance() {
+    this.metaCoinService.getBalance(this.account).then((balance) => {
+      console.log('balance: ' + balance);
+      this.balance = balance.valueOf();
+    }).catch((error) => {
+      this.setStatus('Error loading balance');
     });
   }
 
@@ -74,25 +80,9 @@ export class MetaSenderComponent implements OnInit {
     });
   }
 
-  refreshBalance() {
-    console.log('Refreshing balance');
-
-    this.MetaCoin.then((contract) => {
-      return contract.deployed();
-    }).then((metaCoinInstance) => {
-      return metaCoinInstance.getBalance.call(this.account);
-    }).then((value) => {
-      console.log('Found balance: ' + value);
-      this.balance = value.valueOf();
-    }).catch(function (e) {
-      console.log(e);
-      this.setStatus('Error getting balance; see log.');
-    });
-  }
-
   clickAddress(e) {
-    this.account = e.target.value;
-    this.refreshBalance();
+    /*this.account = e.target.value;
+    this.refreshBalance();*/
   }
 
   setAmount(e) {
